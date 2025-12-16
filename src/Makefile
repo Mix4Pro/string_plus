@@ -36,7 +36,6 @@ clean:
 	rm -rf gcov_report
 
 clang:
-	cp ./../materials/linters/.clang-format ./
 	clang-format -i $(ALL_SRC)
 
 coverage: CFLAGS += $(GCOV_FLAGS)
