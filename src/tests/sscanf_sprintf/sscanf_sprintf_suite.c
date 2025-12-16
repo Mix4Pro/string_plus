@@ -1,8 +1,5 @@
 #include "sscanf_sprintf_suite.h"
 
-#include "s21_sprintf_test.c"
-#include "s21_sscanf_test.c"
-
 int main(void) {
   int failed_count = 0;
   Suite *s = sscanf_sprintf_suite();

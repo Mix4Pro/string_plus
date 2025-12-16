@@ -10,17 +10,23 @@ static void parse_format_specifier(const char **format_ptr, int *width,
 static int parse_value(const char **str_ptr, const char *format_ptr, int width,
                        int length_modifier, va_list args, bool suppress);
 static int parse_char(const char **str_ptr, va_list args, bool suppress);
-static int parse_int_with_base(const char **str_ptr, int length_modifier, va_list args, bool suppress);
-static int parse_int(const char **str_ptr, int length_modifier, va_list args, bool suppress);
-static int parse_string(const char **str_ptr, int width, va_list args, bool suppress);
-static int parse_unsigned(const char **str_ptr, int length_modifier, va_list args, bool suppress);
-static int parse_octal(const char **str_ptr, int length_modifier, va_list args, bool suppress);
-static int parse_hex(const char **str_ptr, int length_modifier, va_list args, bool suppress);
+static int parse_int_with_base(const char **str_ptr, int length_modifier,
+                               va_list args, bool suppress);
+static int parse_int(const char **str_ptr, int length_modifier, va_list args,
+                     bool suppress);
+static int parse_string(const char **str_ptr, int width, va_list args,
+                        bool suppress);
+static int parse_unsigned(const char **str_ptr, int length_modifier,
+                          va_list args, bool suppress);
+static int parse_octal(const char **str_ptr, int length_modifier, va_list args,
+                       bool suppress);
+static int parse_hex(const char **str_ptr, int length_modifier, va_list args,
+                     bool suppress);
 static int parse_pointer(const char **str_ptr, va_list args, bool suppress);
 
-// Вспомогательные функции для парсинга чисел
 static long long parse_number(const char **str_ptr, int base, int *success);
-static unsigned long long parse_unsigned_number(const char **str_ptr, int base, int *success);
+static unsigned long long parse_unsigned_number(const char **str_ptr, int base,
+                                                int *success);
 static int digit_value(char c);
 
 int s21_sscanf(const char *str, const char *format, ...) {
@@ -52,8 +58,9 @@ static int parse_input(const char *str, const char *format, va_list args) {
       int width = -1, length_modifier = 0;
       bool suppress = false;
       parse_format_specifier(&format_ptr, &width, &length_modifier, &suppress);
-      
-      int parsed = parse_value(&str_ptr, format_ptr, width, length_modifier, args, suppress);
+
+      int parsed = parse_value(&str_ptr, format_ptr, width, length_modifier,
+                               args, suppress);
       if (parsed == 0) {
         break;
       }
@@ -72,7 +79,7 @@ static void parse_format_specifier(const char **format_ptr, int *width,
     *suppress = true;
     (*format_ptr)++;
   }
-  
+
   if (isdigit(**format_ptr)) {
     *width = 0;
     while (isdigit(**format_ptr)) {
@@ -80,7 +87,7 @@ static void parse_format_specifier(const char **format_ptr, int *width,
       (*format_ptr)++;
     }
   }
-  
+
   if (**format_ptr == 'h' || **format_ptr == 'l' || **format_ptr == 'L') {
     *length_modifier = **format_ptr;
     (*format_ptr)++;
@@ -125,79 +132,60 @@ static int digit_value(char c) {
 }
 
 static long long parse_number(const char **str_ptr, int base, int *success) {
-    const char *p = *str_ptr;
-    long long result = 0;
-    int sign = 1;
-    *success = 0;
+  const char *p = *str_ptr;
+  long long result = 0;
+  int sign = 1;
+  *success = 0;
 
-    if (*p == '-') { sign = -1; p++; }
-    else if (*p == '+') { p++; }
+  if (*p == '-') {
+    sign = -1;
+    p++;
+  } else if (*p == '+') {
+    p++;
+  }
 
-    int digits_read = 0;
-    while (*p) {
-        int digit = digit_value(*p);
-        if (digit < 0 || digit >= base) break;
-        result = result * base + digit;
-        p++;
-        digits_read++;
-    }
+  int digits_read = 0;
+  while (*p) {
+    int digit = digit_value(*p);
+    if (digit < 0 || digit >= base) break;
+    result = result * base + digit;
+    p++;
+    digits_read++;
+  }
 
-    if (digits_read > 0) {
-        *success = 1;
-        *str_ptr = p;
-        return result * sign;
-    }
+  if (digits_read > 0) {
+    *success = 1;
+    *str_ptr = p;
+    return result * sign;
+  }
 
-    return 0;
+  return 0;
 }
 
+static unsigned long long parse_unsigned_number(const char **str_ptr, int base,
+                                                int *success) {
+  const char *p = *str_ptr;
+  unsigned long long result = 0;
+  *success = 0;
 
-static unsigned long long parse_unsigned_number(const char **str_ptr, int base, int *success) {
-    const char *p = *str_ptr;
-    unsigned long long result = 0;
-    *success = 0;
+  if (*p == '+') p++;
 
-    if (*p == '+') p++;
+  int digits_read = 0;
+  while (*p) {
+    int digit = digit_value(*p);
+    if (digit < 0 || digit >= base) break;
+    result = result * base + digit;
+    p++;
+    digits_read++;
+  }
 
-    int digits_read = 0;
-    while (*p) {
-        int digit = digit_value(*p);
-        if (digit < 0 || digit >= base) break;
-        result = result * base + digit;
-        p++;
-        digits_read++;
-    }
+  if (digits_read > 0) {
+    *success = 1;
+    *str_ptr = p;
+  }
 
-    if (digits_read > 0) {
-        *success = 1;
-        *str_ptr = p;
-    }
-
-    return result;
+  return result;
 }
-
-// static int parse_char(const char **str_ptr, va_list args, bool suppress) {
-//   if (**str_ptr == '\0') {
-//     if (!suppress) {
-//       char *out = va_arg(args, char *);
-//       *out = '\0';
-//     }
-
-//     return 0;
-//   };
-  
-//   char read_char = **str_ptr;
-//   (*str_ptr)++;
-  
-//   if (!suppress) {
-//     char *c = va_arg(args, char *);
-//     if (c) {
-//       *c = read_char;
-//     }
-//   }
-  
-//   return 1;
-// }
 
 static int parse_char(const char **str_ptr, va_list args, bool suppress) {
   if (**str_ptr == '\0') {
@@ -217,210 +205,313 @@ static int parse_char(const char **str_ptr, va_list args, bool suppress) {
   return 1;
 }
 
+static int parse_int_with_base(const char **str_ptr, int length_modifier,
+                               va_list args, bool suppress) {
+  while (isspace(**str_ptr)) (*str_ptr)++;
+  if (**str_ptr == '\0') return 0;
 
-static int parse_int_with_base(const char **str_ptr, int length_modifier, va_list args, bool suppress) {
-    while (isspace(**str_ptr)) (*str_ptr)++;
-    if (**str_ptr == '\0') return 0;
+  const char *start = *str_ptr;
+  const char *p = start;
+  int base = 10;
+  int sign = 1;
 
-    const char *start = *str_ptr;
-    const char *p = start;
-    int base = 10;
-    int sign = 1;
+  if (*p == '-') {
+    sign = -1;
+    p++;
+  } else if (*p == '+') {
+    p++;
+  }
 
-    if (*p == '-') { sign = -1; p++; }
-    else if (*p == '+') { p++; }
-
-    if (*p == '0') {
-        if (*(p + 1) == 'x' || *(p + 1) == 'X') {
-            base = 16; p += 2;
-        } else {
-            base = 8; p++;
-        }
+  if (*p == '0') {
+    if (*(p + 1) == 'x' || *(p + 1) == 'X') {
+      base = 16;
+      p += 2;
+    } else {
+      base = 8;
+      p++;
     }
+  }
 
-    int success = 0;
-    long long value = parse_number(&p, base, &success);
-    
-    if (!success) return 0;
-    
-    value *= sign;
-    *str_ptr = p;
+  int success = 0;
+  long long value = parse_number(&p, base, &success);
 
-    if (!suppress) {
-        switch (length_modifier) {
-            case 'H': { signed char *ptr = va_arg(args, signed char *); if (ptr) *ptr = (signed char)value; break; }
-            case 'h': { short *ptr = va_arg(args, short *); if (ptr) *ptr = (short)value; break; }
-            case 'l': { long *ptr = va_arg(args, long *); if (ptr) *ptr = (long)value; break; }
-            case 'L': { long long *ptr = va_arg(args, long long *); if (ptr) *ptr = value; break; }
-            default: { int *ptr = va_arg(args, int *); if (ptr) *ptr = (int)value; break; }
-        }
+  if (!success) return 0;
+
+  value *= sign;
+  *str_ptr = p;
+
+  if (!suppress) {
+    switch (length_modifier) {
+      case 'H': {
+        signed char *ptr = va_arg(args, signed char *);
+        if (ptr) *ptr = (signed char)value;
+        break;
+      }
+      case 'h': {
+        short *ptr = va_arg(args, short *);
+        if (ptr) *ptr = (short)value;
+        break;
+      }
+      case 'l': {
+        long *ptr = va_arg(args, long *);
+        if (ptr) *ptr = (long)value;
+        break;
+      }
+      case 'L': {
+        long long *ptr = va_arg(args, long long *);
+        if (ptr) *ptr = value;
+        break;
+      }
+      default: {
+        int *ptr = va_arg(args, int *);
+        if (ptr) *ptr = (int)value;
+        break;
+      }
     }
+  }
 
-    return 1;
+  return 1;
 }
 
-static int parse_int(const char **str_ptr, int length_modifier, va_list args, bool suppress) {
+static int parse_int(const char **str_ptr, int length_modifier, va_list args,
+                     bool suppress) {
   while (isspace(**str_ptr)) (*str_ptr)++;
-  
+
   if (**str_ptr == '\0') return 0;
-  
+
   int success = 0;
   const char *temp_ptr = *str_ptr;
   long long value = parse_number(&temp_ptr, 10, &success);
-  
+
   if (!success) return 0;
-  
+
   *str_ptr = temp_ptr;
-  
+
   if (!suppress) {
     switch (length_modifier) {
-      case 'H': { signed char *p = va_arg(args, signed char *); if (p) *p = (signed char)value; break; }
-      case 'h': { short *p = va_arg(args, short *); if (p) *p = (short)value; break; }
-      case 'l': { long *p = va_arg(args, long *); if (p) *p = (long)value; break; }
-      case 'L': { long long *p = va_arg(args, long long *); if (p) *p = value; break; }
-      default: { int *p = va_arg(args, int *); if (p) *p = (int)value; break; }
+      case 'H': {
+        signed char *p = va_arg(args, signed char *);
+        if (p) *p = (signed char)value;
+        break;
+      }
+      case 'h': {
+        short *p = va_arg(args, short *);
+        if (p) *p = (short)value;
+        break;
+      }
+      case 'l': {
+        long *p = va_arg(args, long *);
+        if (p) *p = (long)value;
+        break;
+      }
+      case 'L': {
+        long long *p = va_arg(args, long long *);
+        if (p) *p = value;
+        break;
+      }
+      default: {
+        int *p = va_arg(args, int *);
+        if (p) *p = (int)value;
+        break;
+      }
     }
   }
-  
+
   return 1;
 }
 
-static int parse_string(const char **str_ptr, int width, va_list args, bool suppress) {
-    while (isspace(**str_ptr)) (*str_ptr)++;
+static int parse_string(const char **str_ptr, int width, va_list args,
+                        bool suppress) {
+  while (isspace(**str_ptr)) (*str_ptr)++;
 
-    if (**str_ptr == '\0') {
-        // if (!suppress) {
-        //     char *str = va_arg(args, char *);
-        //     if (str) *str = '\0';
-        // }
-        return 0;
-    }
+  if (**str_ptr == '\0') return 0;
 
-    const char *start = *str_ptr;
-    int count = 0;
-    
-    // Сначала подсчитываем количество символов
-    while (**str_ptr && !isspace(**str_ptr) && (width == -1 || count < width)) {
-        (*str_ptr)++;
-        count++;
+  const char *start = *str_ptr;
+  int count = 0;
+
+  while (**str_ptr && !isspace(**str_ptr) && (width == -1 || count < width)) {
+    (*str_ptr)++;
+    count++;
+  }
+
+  if (count == 0) return 0;
+
+  if (!suppress) {
+    char *str = va_arg(args, char *);
+    if (str) {
+      const char *p = start;
+      int i = 0;
+      while (i < count) {
+        str[i] = p[i];
+        i++;
+      }
+      str[count] = '\0';
     }
-    
-    if (count == 0) return 0;
-    
-    // Теперь копируем, если не suppress
-    if (!suppress) {
-        char *str = va_arg(args, char *);
-        if (str) {
-            const char *p = start;
-            int i = 0;
-            while (i < count) {
-                str[i] = p[i];
-                i++;
-            }
-            str[count] = '\0';
-        }
-    }
-    
-    return 1;
+  }
+
+  return 1;
 }
 
-static int parse_unsigned(const char **str_ptr, int length_modifier, va_list args, bool suppress) {
+static int parse_unsigned(const char **str_ptr, int length_modifier,
+                          va_list args, bool suppress) {
   while (isspace(**str_ptr)) (*str_ptr)++;
-  
+
   if (**str_ptr == '\0') return 0;
-  
+
   int success = 0;
   const char *temp_ptr = *str_ptr;
   unsigned long long value = parse_unsigned_number(&temp_ptr, 10, &success);
-  
+
   if (!success) return 0;
-  
+
   *str_ptr = temp_ptr;
-  
+
   if (!suppress) {
     switch (length_modifier) {
-      case 'H': { unsigned char *p = va_arg(args, unsigned char *); if (p) *p = (unsigned char)value; break; }
-      case 'h': { unsigned short *p = va_arg(args, unsigned short *); if (p) *p = (unsigned short)value; break; }
-      case 'l': { unsigned long *p = va_arg(args, unsigned long *); if (p) *p = (unsigned long)value; break; }
-      case 'L': { unsigned long long *p = va_arg(args, unsigned long long *); if (p) *p = value; break; }
-      default: { unsigned int *p = va_arg(args, unsigned int *); if (p) *p = (unsigned int)value; break; }
+      case 'H': {
+        unsigned char *p = va_arg(args, unsigned char *);
+        if (p) *p = (unsigned char)value;
+        break;
+      }
+      case 'h': {
+        unsigned short *p = va_arg(args, unsigned short *);
+        if (p) *p = (unsigned short)value;
+        break;
+      }
+      case 'l': {
+        unsigned long *p = va_arg(args, unsigned long *);
+        if (p) *p = (unsigned long)value;
+        break;
+      }
+      case 'L': {
+        unsigned long long *p = va_arg(args, unsigned long long *);
+        if (p) *p = value;
+        break;
+      }
+      default: {
+        unsigned int *p = va_arg(args, unsigned int *);
+        if (p) *p = (unsigned int)value;
+        break;
+      }
     }
   }
-  
+
   return 1;
 }
 
-static int parse_octal(const char **str_ptr, int length_modifier, va_list args, bool suppress) {
+static int parse_octal(const char **str_ptr, int length_modifier, va_list args,
+                       bool suppress) {
   while (isspace(**str_ptr)) (*str_ptr)++;
-  
+
   if (**str_ptr == '\0') return 0;
-  
+
   int success = 0;
   const char *temp_ptr = *str_ptr;
   unsigned long long value = parse_unsigned_number(&temp_ptr, 8, &success);
-  
+
   if (!success) return 0;
-  
+
   *str_ptr = temp_ptr;
-  
+
   if (!suppress) {
     switch (length_modifier) {
-      case 'H': { unsigned char *p = va_arg(args, unsigned char *); if (p) *p = (unsigned char)value; break; }
-      case 'h': { unsigned short *p = va_arg(args, unsigned short *); if (p) *p = (unsigned short)value; break; }
-      case 'l': { unsigned long *p = va_arg(args, unsigned long *); if (p) *p = (unsigned long)value; break; }
-      case 'L': { unsigned long long *p = va_arg(args, unsigned long long *); if (p) *p = value; break; }
-      default: { unsigned int *p = va_arg(args, unsigned int *); if (p) *p = (unsigned int)value; break; }
+      case 'H': {
+        unsigned char *p = va_arg(args, unsigned char *);
+        if (p) *p = (unsigned char)value;
+        break;
+      }
+      case 'h': {
+        unsigned short *p = va_arg(args, unsigned short *);
+        if (p) *p = (unsigned short)value;
+        break;
+      }
+      case 'l': {
+        unsigned long *p = va_arg(args, unsigned long *);
+        if (p) *p = (unsigned long)value;
+        break;
+      }
+      case 'L': {
+        unsigned long long *p = va_arg(args, unsigned long long *);
+        if (p) *p = value;
+        break;
+      }
+      default: {
+        unsigned int *p = va_arg(args, unsigned int *);
+        if (p) *p = (unsigned int)value;
+        break;
+      }
     }
   }
-  
+
   return 1;
 }
 
-static int parse_hex(const char **str_ptr, int length_modifier, va_list args, bool suppress) {
-    while (isspace(**str_ptr)) (*str_ptr)++;
-    if (**str_ptr == '\0') return 0;
+static int parse_hex(const char **str_ptr, int length_modifier, va_list args,
+                     bool suppress) {
+  while (isspace(**str_ptr)) (*str_ptr)++;
+  if (**str_ptr == '\0') return 0;
 
-    const char *p = *str_ptr;
+  const char *p = *str_ptr;
 
-    if (*p == '0' && (*(p + 1) == 'x' || *(p + 1) == 'X')) p += 2;
+  if (*p == '0' && (*(p + 1) == 'x' || *(p + 1) == 'X')) p += 2;
 
-    int success = 0;
-    unsigned long long value = parse_unsigned_number(&p, 16, &success);
-    if (!success) return 0;
+  int success = 0;
+  unsigned long long value = parse_unsigned_number(&p, 16, &success);
+  if (!success) return 0;
 
-    *str_ptr = p;
+  *str_ptr = p;
 
-    if (!suppress) {
-        switch (length_modifier) {
-            case 'H': { unsigned char *ptr = va_arg(args, unsigned char *); if (ptr) *ptr = (unsigned char)value; break; }
-            case 'h': { unsigned short *ptr = va_arg(args, unsigned short *); if (ptr) *ptr = (unsigned short)value; break; }
-            case 'l': { unsigned long *ptr = va_arg(args, unsigned long *); if (ptr) *ptr = (unsigned long)value; break; }
-            case 'L': { unsigned long long *ptr = va_arg(args, unsigned long long *); if (ptr) *ptr = value; break; }
-            default: { unsigned int *ptr = va_arg(args, unsigned int *); if (ptr) *ptr = (unsigned int)value; break; }
-        }
+  if (!suppress) {
+    switch (length_modifier) {
+      case 'H': {
+        unsigned char *ptr = va_arg(args, unsigned char *);
+        if (ptr) *ptr = (unsigned char)value;
+        break;
+      }
+      case 'h': {
+        unsigned short *ptr = va_arg(args, unsigned short *);
+        if (ptr) *ptr = (unsigned short)value;
+        break;
+      }
+      case 'l': {
+        unsigned long *ptr = va_arg(args, unsigned long *);
+        if (ptr) *ptr = (unsigned long)value;
+        break;
+      }
+      case 'L': {
+        unsigned long long *ptr = va_arg(args, unsigned long long *);
+        if (ptr) *ptr = value;
+        break;
+      }
+      default: {
+        unsigned int *ptr = va_arg(args, unsigned int *);
+        if (ptr) *ptr = (unsigned int)value;
+        break;
+      }
     }
+  }
 
-    return 1;
+  return 1;
 }
 
 static int parse_pointer(const char **str_ptr, va_list args, bool suppress) {
-    while (isspace(**str_ptr)) (*str_ptr)++;
-    if (**str_ptr == '\0') return 0;
+  while (isspace(**str_ptr)) (*str_ptr)++;
+  if (**str_ptr == '\0') return 0;
 
-    const char *p = *str_ptr;
+  const char *p = *str_ptr;
 
-    if (*p == '0' && (*(p+1) == 'x' || *(p+1) == 'X')) p += 2;
+  if (*p == '0' && (*(p + 1) == 'x' || *(p + 1) == 'X')) p += 2;
 
-    int success = 0;
-    unsigned long long value = parse_unsigned_number(&p, 16, &success);
-    if (!success) return 0;
+  int success = 0;
+  unsigned long long value = parse_unsigned_number(&p, 16, &success);
+  if (!success) return 0;
 
-    *str_ptr = p;
+  *str_ptr = p;
 
-    if (!suppress) {
-        void **ptr = va_arg(args, void **);
-        if (ptr) *ptr = (void *)value;
-    }
+  if (!suppress) {
+    void **ptr = va_arg(args, void **);
+    if (ptr) *ptr = (void *)value;
+  }
 
-    return 1;
+  return 1;
 }

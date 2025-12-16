@@ -10,6 +10,7 @@ OBJECTS = $(SOURCES:.c=.o)
 LIBRARY = s21_string.a
 
 TEST_DIR = tests
+TEST_SOURCES = ${wildcard ${TEST_DIR}/*/*.c}
 TEST_SUITE_SOURCES = $(wildcard $(TEST_DIR)/*/*_suite.c)
 TEST_SUITE_OBJECTS = $(patsubst %.c,%.o,$(TEST_SUITE_SOURCES))
 TEST_EXECUTABLES = $(patsubst %.c,%,$(TEST_SUITE_SOURCES))
@@ -35,8 +36,13 @@ clean:
 	rm -f *.gcno *.gcda *.gcov **/**/*.gcno **/**/*.gcda **/**/*.gcov coverage.info -r coverage_report
 	rm -rf gcov_report
 
-clang:
-	clang-format -i $(ALL_SRC)
+clang_check:
+	clang-format -n ${SOURCES}
+	clang-format -n ${TEST_SOURCES}
+
+clang_fix:
+	clang-format -i ${SOURCES}
+	clang-format -i ${TEST_SOURCES}
 
 coverage: CFLAGS += $(GCOV_FLAGS)
 coverage: LDLIBS += $(GCOV_FLAGS)
@@ -53,22 +59,3 @@ gcov_report: coverage
 control: CFLAGS += -DVALGRIND
 control: clean $(LIBRARY) $(TEST_EXECUTABLES)
 	for test in $(TEST_EXECUTABLES); do CK_FORK=no valgrind --tool=memcheck --leak-check=yes ./$$test; done
-
-cppcheck:
-	cppcheck --enable=all --suppress=missingIncludeSystem $(ALL_SRC)
-
-old_build: clean
-	gcc -Wall -Wextra -Werror -std=c11 -Wno-unused-parameter -c -o s21_string.o s21_string.c
-	gcc -Wall -Wextra -Werror -std=c11 -Wno-unused-parameter -c -o s21_sscanf.o s21_sscanf.c
-	gcc -Wall -Wextra -Werror -std=c11 -Wno-unused-parameter -c -o s21_sprintf.o s21_sprintf.c
-	gcc -c tests/main.c -o tests/main.o
-	ar rcs s21_string.a s21_string.o s21_sscanf.o s21_sprintf.o
-	ranlib s21_string.a
-
-	gcc -o tests/main tests/main.o s21_string.a
-	valgrind --tool=memcheck --leak-check=yes ./tests/main
-
-new_build: clean $(LIBRARY)
-	gcc -c tests/main.c -o tests/main.o
-	gcc -o tests/main tests/main.o s21_string.a
-	valgrind --tool=memcheck --leak-check=yes ./tests/main
