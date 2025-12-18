@@ -1,8 +1,5 @@
 #include "s21_string.h"
 
-#include <stdbool.h>
-#include <stdlib.h>
-
 void *s21_memchr(const void *str, int c, s21_size_t n) {
   s21_size_t success = n;
   const unsigned char *ptr_str = (const unsigned char *)str;
@@ -11,6 +8,7 @@ void *s21_memchr(const void *str, int c, s21_size_t n) {
     while (i < n && success == n) {
       if (ptr_str[i] == (unsigned char)c) {
         success = i;
+        break;
       }
       i++;
     }
